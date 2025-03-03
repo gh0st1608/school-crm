@@ -9,14 +9,14 @@ steps:
         npm run build
 
   # 2. Crear el bucket si no existe
-  - name: 'gcr.io/cloud-builders/gcloud'
-    args:
-      - 'storage'
-      - 'buckets'
-      - 'create'
-      - 'gs://schoolcrm-dev-appreact-cloud-build'
-      - '--location=us-central1'
-    allowFailure: true # Si ya existe, no fallará
+  #- name: 'gcr.io/cloud-builders/gcloud'
+  #  args:
+  #    - 'storage'
+  #    - 'buckets'
+  #    - 'create'
+  #    - 'gs://schoolcrm-dev-appreact-cloud-build'
+  #    - '--location=us-central1'
+  #  allowFailure: true # Si ya existe, no fallará
 
   # 3. Subir archivos estáticos al bucket
   - name: 'gcr.io/cloud-builders/gsutil'
