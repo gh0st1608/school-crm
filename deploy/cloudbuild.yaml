@@ -44,6 +44,6 @@ steps:
       - 'index.html'
       - 'gs://schoolcrm-dev-appreact-cloud-build'
 
-logsBucket: 'gs://schoolcrm-dev-appreact-cloud-build'
+logsBucket: 'gs://schoolcrm-logs-dev-appreact-cloud-build'
 serviceAccount: '1094025365695-compute@developer.gserviceaccount.com'
 images: []
