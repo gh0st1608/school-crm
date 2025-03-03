@@ -44,4 +44,7 @@ steps:
       - 'index.html'
       - 'gs://$PROJECT_ID-react-app'
 
+options:
+  logging: CLOUD_LOGGING_ONLY
+  
 images: []
