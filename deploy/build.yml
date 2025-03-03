@@ -1,0 +1,47 @@
+steps:
+  # 1. Instalar dependencias y construir la app de React
+  - name: 'node:20'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        npm install
+        npm run build
+
+  # 2. Crear el bucket si no existe
+  - name: 'gcr.io/cloud-builders/gcloud'
+    args:
+      - 'storage'
+      - 'buckets'
+      - 'create'
+      - 'gs://$PROJECT_ID-react-app'
+      - '--location=us-central1'
+    allowFailure: true # Si ya existe, no fallará
+
+  # 3. Subir archivos estáticos al bucket
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - '-m'
+      - 'rsync'
+      - '-r'
+      - 'dist/'
+      - 'gs://$PROJECT_ID-react-app'
+
+  # 4. Hacer público el bucket
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - 'iam'
+      - 'ch'
+      - 'allUsers:objectViewer'
+      - 'gs://$PROJECT_ID-react-app'
+
+  # 5. Configurar el archivo index.html como página principal
+  - name: 'gcr.io/cloud-builders/gsutil'
+    args:
+      - 'web'
+      - 'set'
+      - '-m'
+      - 'index.html'
+      - 'gs://$PROJECT_ID-react-app'
+
+images: []
