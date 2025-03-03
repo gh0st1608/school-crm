@@ -14,7 +14,7 @@ steps:
       - 'storage'
       - 'buckets'
       - 'create'
-      - 'gs://$PROJECT_ID-react-app'
+      - 'gs://schoolcrm-dev-appreact-cloud-build'
       - '--location=us-central1'
     allowFailure: true # Si ya existe, no fallará
 
@@ -25,7 +25,7 @@ steps:
       - 'rsync'
       - '-r'
       - 'dist/'
-      - 'gs://$PROJECT_ID-react-app'
+      - 'gs://schoolcrm-dev-appreact-cloud-build'
 
   # 4. Hacer público el bucket
   - name: 'gcr.io/cloud-builders/gsutil'
@@ -33,7 +33,7 @@ steps:
       - 'iam'
       - 'ch'
       - 'allUsers:objectViewer'
-      - 'gs://$PROJECT_ID-react-app'
+      - 'gs://schoolcrm-dev-appreact-cloud-build'
 
   # 5. Configurar el archivo index.html como página principal
   - name: 'gcr.io/cloud-builders/gsutil'
@@ -42,9 +42,7 @@ steps:
       - 'set'
       - '-m'
       - 'index.html'
-      - 'gs://$PROJECT_ID-react-app'
+      - 'gs://schoolcrm-dev-appreact-cloud-build'
 
-options:
-  logging: CLOUD_LOGGING_ONLY
-  
+logsBucket: 'gs://schoolcrm-dev-appreact-cloud-build'
 images: []
