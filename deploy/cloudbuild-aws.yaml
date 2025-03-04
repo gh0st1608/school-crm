@@ -1,0 +1,73 @@
+steps:
+  # 1️⃣ Instalar dependencias y construir la app
+  - name: 'node:20'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        npm install
+        npm run build
+
+  # 2️⃣ Crear el bucket en S3 si no existe
+  - name: 'amazon/aws-cli'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        aws s3api head-bucket --bucket $BUCKET_NAME || \
+        aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_REGION --create-bucket-configuration LocationConstraint=$AWS_REGION
+
+  # 3️⃣ Subir archivos estáticos a S3
+  - name: 'amazon/aws-cli'
+    args:
+      - 's3'
+      - 'sync'
+      - 'dist/'
+      - 's3://$BUCKET_NAME'
+      - '--delete'
+
+  # 4️⃣ Hacer públicos los archivos en S3
+  - name: 'amazon/aws-cli'
+    args:
+      - 's3api'
+      - 'put-bucket-policy'
+      - '--bucket'
+      - '$BUCKET_NAME'
+      - '--policy'
+      - |
+        {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "PublicReadGetObject",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Action": "s3:GetObject",
+              "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
+            }
+          ]
+        }
+
+  # 5️⃣ Configurar el bucket como hosting de sitio web
+  - name: 'amazon/aws-cli'
+    args:
+      - 's3api'
+      - 'put-bucket-website'
+      - '--bucket'
+      - '$BUCKET_NAME'
+      - '--website-configuration'
+      - |
+        {
+          "IndexDocument": {
+            "Suffix": "index.html"
+          },
+          "ErrorDocument": {
+            "Key": "index.html"
+          }
+        }
+
+substitutions:
+  _BUCKET_NAME: 'schoolcrm-dev-appreact-cloud-build'  # Reemplázalo con el nombre de tu bucket en S3
+  _AWS_REGION: 'us-east-1'             # Reemplázalo con tu región en AWS
+
+timeout: 1200s
