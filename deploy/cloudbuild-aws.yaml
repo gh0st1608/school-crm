@@ -1,41 +1,34 @@
-steps:
-  # 1️⃣ Instalar dependencias y construir la app
-  - name: 'node:20'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        npm install
-        npm run build
+version: 0.2
 
-  # 2️⃣ Crear el bucket en S3 si no existe
-  - name: 'amazon/aws-cli'
-    entrypoint: 'bash'
-    args:
-      - '-c'
+env:
+  variables:
+    BUCKET_NAME: "schoolcrm-dev-appreact-cloud-build"
+    AWS_REGION: "us-east-1"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm install
+
+  build:
+    commands:
+      - npm run build
+
+  post_build:
+    commands:
+      # 1️⃣ Crear el bucket si no existe
       - |
         aws s3api head-bucket --bucket $BUCKET_NAME || \
         aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_REGION --create-bucket-configuration LocationConstraint=$AWS_REGION
 
-  # 3️⃣ Subir archivos estáticos a S3
-  - name: 'amazon/aws-cli'
-    args:
-      - 's3'
-      - 'sync'
-      - 'dist/'
-      - 's3://$BUCKET_NAME'
-      - '--delete'
+      # 2️⃣ Subir archivos a S3
+      - aws s3 sync dist/ s3://$BUCKET_NAME --delete
 
-  # 4️⃣ Hacer públicos los archivos en S3
-  - name: 'amazon/aws-cli'
-    args:
-      - 's3api'
-      - 'put-bucket-policy'
-      - '--bucket'
-      - '$BUCKET_NAME'
-      - '--policy'
+      # 3️⃣ Hacer públicos los archivos
       - |
-        {
+        aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy '{
           "Version": "2012-10-17",
           "Statement": [
             {
@@ -43,31 +36,19 @@ steps:
               "Effect": "Allow",
               "Principal": "*",
               "Action": "s3:GetObject",
-              "Resource": "arn:aws:s3:::$BUCKET_NAME/*"
+              "Resource": "arn:aws:s3:::'"$BUCKET_NAME"'/*"
             }
           ]
-        }
+        }'
 
-  # 5️⃣ Configurar el bucket como hosting de sitio web
-  - name: 'amazon/aws-cli'
-    args:
-      - 's3api'
-      - 'put-bucket-website'
-      - '--bucket'
-      - '$BUCKET_NAME'
-      - '--website-configuration'
+      # 4️⃣ Configurar el bucket como sitio web
       - |
-        {
-          "IndexDocument": {
-            "Suffix": "index.html"
-          },
-          "ErrorDocument": {
-            "Key": "index.html"
-          }
-        }
+        aws s3api put-bucket-website --bucket $BUCKET_NAME --website-configuration '{
+          "IndexDocument": {"Suffix": "index.html"},
+          "ErrorDocument": {"Key": "index.html"}
+        }'
 
-substitutions:
-  _BUCKET_NAME: 'schoolcrm-dev-appreact-cloud-build'  # Reemplázalo con el nombre de tu bucket en S3
-  _AWS_REGION: 'us-east-1'             # Reemplázalo con tu región en AWS
-
-timeout: 1200s
+artifacts:
+  files:
+    - '**/*'
+  discard-paths: yes
