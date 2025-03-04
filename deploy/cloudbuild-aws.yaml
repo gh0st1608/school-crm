@@ -20,9 +20,7 @@ phases:
 
   post_build:
     commands:
-      - echo "🔍 Verificando las variables de entorno..."
-      - echo "Bucket: $BUCKET_NAME"
-      - echo "Región: $AWS_REGION"
+      - echo "🔍 Verificando las variables de entorno... $BUCKET_NAME"
 
       # 1️⃣ Verificar si el bucket ya existe
       - echo "🔍 Verificando si el bucket $BUCKET_NAME existe en AWS..."
