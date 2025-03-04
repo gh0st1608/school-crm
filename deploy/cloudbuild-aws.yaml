@@ -10,25 +10,40 @@ phases:
     runtime-versions:
       nodejs: 20
     commands:
+      - echo "🚀 Iniciando instalación..."
       - npm install
 
   build:
     commands:
+      - echo "⚙️ Compilando la aplicación..."
       - npm run build
 
   post_build:
     commands:
+      - echo "🔍 Verificando las variables de entorno..."
       - echo "Bucket: $BUCKET_NAME"
-      - echo "Region: $AWS_REGION"
-      # 1️⃣ Crear el bucket si no existe
+      - echo "Región: $AWS_REGION"
+
+      # 1️⃣ Verificar si el bucket ya existe
+      - echo "🔍 Verificando si el bucket $BUCKET_NAME existe en AWS..."
       - |
-        aws s3api head-bucket --bucket $BUCKET_NAME || \
-        aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_REGION
+        if aws s3api head-bucket --bucket $BUCKET_NAME 2>/dev/null; then
+          echo "✅ El bucket $BUCKET_NAME ya existe."
+        else
+          echo "🚀 El bucket $BUCKET_NAME no existe. Creándolo..."
+          if [ "$AWS_REGION" = "us-east-1" ]; then
+            aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_REGION
+          else
+            aws s3api create-bucket --bucket $BUCKET_NAME --region $AWS_REGION --create-bucket-configuration LocationConstraint=$AWS_REGION
+          fi
+        fi
 
       # 2️⃣ Subir archivos a S3
+      - echo "📤 Subiendo archivos a S3..."
       - aws s3 sync dist/ s3://$BUCKET_NAME --delete
 
       # 3️⃣ Hacer públicos los archivos
+      - echo "🌍 Configurando permisos públicos para los archivos en S3..."
       - |
         aws s3api put-bucket-policy --bucket $BUCKET_NAME --policy '{
           "Version": "2012-10-17",
@@ -43,7 +58,8 @@ phases:
           ]
         }'
 
-      # 4️⃣ Configurar el bucket como sitio web
+      # 4️⃣ Configurar el bucket como hosting de sitio web
+      - echo "🌐 Configurando el bucket como un sitio web en S3..."
       - |
         aws s3api put-bucket-website --bucket $BUCKET_NAME --website-configuration '{
           "IndexDocument": {"Suffix": "index.html"},
