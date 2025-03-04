@@ -18,6 +18,8 @@ phases:
 
   post_build:
     commands:
+      - echo "Bucket: $BUCKET_NAME"
+      - echo "Region: $AWS_REGION"
       # 1️⃣ Crear el bucket si no existe
       - |
         aws s3api head-bucket --bucket $BUCKET_NAME || \
